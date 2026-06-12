@@ -27,11 +27,11 @@ public interface IStatusesContainer
 internal class GenericStatus : IStatus
 {
     private readonly string _key;
-    public object Value { get; private set; }
+    public object? Value { get; private set; }
 
     public GenericStatus(string key) => _key = key;
 
-    public Task<T> GetValueAsync<T>()
+    public Task<T?> GetValueAsync<T>()
     {
         // Implementation would fetch from the current connection.
         return Task.FromResult(default(T));

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GpSharp.Tests/GpSharp.Tests.csproj" />
+    <Project Path="src/GpSharp/GpSharp.csproj" />
+  </Folder>
+</Solution>

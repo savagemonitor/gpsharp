@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.sln.docstates
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User specific
+*.userossc
+*.sln.dotSettings
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Testing
+TestResults/

@@ -9,5 +9,5 @@ using System.Threading.Tasks;
 public interface IStatus
 {
     object Value { get; }
-    Task<T> GetValueAsync<T>();
+    Task<T?> GetValueAsync<T>();
 }

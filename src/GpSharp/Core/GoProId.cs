@@ -7,7 +7,7 @@ using System;
 /// </summary>
 public class GoProId
 {
-    public string Value { get; }
+    public string PartialSerial { get; }
 
     public GoProId(string value)
     {
@@ -15,10 +15,10 @@ public class GoProId
         {
             throw new ArgumentException("GoProId must be exactly 4 characters.", nameof(value));
         }
-        Value = value;
+        PartialSerial = value;
     }
 
-    public override string ToString() => Value;
+    public override string ToString() => PartialSerial;
 
-    public static implicit operator string(GoProId id) => id.Value;
+    public static implicit operator string(GoProId id) => id.PartialSerial;
 }

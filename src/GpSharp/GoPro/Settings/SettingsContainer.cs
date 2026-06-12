@@ -2,41 +2,22 @@ namespace GpSharp.GoPro.Settings;
 
 using System;
 using System.Threading.Tasks;
+using GpSharp.Network;
 
+/// <summary>
+/// Provides access to camera settings via HTTP.
+/// </summary>
 public class SettingsContainer : ISettingsContainer
 {
-    // Placeholder for specific settings
+    private readonly IHttpConnection _connection;
+
     public ISetting VideoResolution { get; }
     public ISetting VideoFrameRate { get; }
 
-    public SettingsContainer()
+    public SettingsContainer(IHttpConnection connection)
     {
-        VideoResolution = new GenericSetting("video_resolution");
-        VideoFrameRate = new GenericSetting("video_frame_rate");
-    }
-}
-
-public interface ISettingsContainer
-{
-    ISetting VideoResolution { get; }
-    ISetting VideoFrameRate { get; }
-}
-
-internal class GenericSetting : ISetting
-{
-    public object? Value { get; private set; }
-
-    public GenericSetting(string key) => _key = key;
-
-    public Task<T?> GetValueAsync<T>()
-    {
-        // Implementation would fetch from the current connection.
-        return Task.FromResult(default(T));
-    }
-
-    public Task SetValueAsync<T>(T value)
-    {
-        // Implementation would send to the current connection.
-        return Task.CompletedTask;
+        _connection = connection;
+        VideoResolution = new GenericSetting(_connection, "video_resolution");
+        VideoFrameRate = new GenericSetting(_connection, "video_frame_rate");
     }
 }

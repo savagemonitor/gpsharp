@@ -75,29 +75,29 @@ GpSharp/
 ### Phase 1: Foundation & HTTP (Priority: HIGH)
 
 **Core Structure**
-- [ ] Set up solution, projects, and build configuration
+- [x] Set up solution, projects, and build configuration
   - Create GpSharp.sln with SDK and Tests projects
   - Multi-target to .NET Standard 2.1 + .NET 6/8/10
   - Configure xUnit and test runner
   - Set up analyzer and linting rules
 
-- [ ] Implement GoProId and NetworkType
+- [x] Implement GoProId and NetworkType
   - GoProId: Last 4 digits of serial number
   - NetworkType enum: WiFi, BLE, USB
 
-- [ ] Design base interfaces for Results/Errors
+- [x] Design base interfaces for Results/Errors
   - Equivalent to Kotlin Result<T>
   - Error types and handling
 
 **OgpSdk Core**
-- [ ] Implement OgpSdk entry point
+- [x] Implement OgpSdk entry point
   - Initialization with app context
   - Device discovery interface
   - Device connection management
   - GoPro retrieval by GoProId
 
 **HTTP Network Layer**
-- [ ] Implement HttpConnection class
+- [x] Implement HttpConnection class
   - Establish HTTP connection to GoPro
   - Handle base URL construction
   - Request/response handling
@@ -108,7 +108,7 @@ GpSharp/
   - Return DiscoveredDevice objects
 
 **GoPro Main Interface**
-- [ ] Implement GoPro class
+- [x] Implement GoPro class
   - Hold reference to active connections
   - Provide Commands/Settings/Statuses/Features containers
   - Connection state management
@@ -116,8 +116,8 @@ GpSharp/
   - Connection drop detection (IObservable<NetworkType>)
 
 **Commands Container (HTTP-only subset)**
-- [ ] Implement ICommandsContainer interface
-- [ ] Implement basic commands (HTTP only first)
+- [x] Implement ICommandsContainer interface
+- [x] Implement basic commands (HTTP only first)
   - setShutter(bool)
   - getMediaList()
   - capturePhoto()
@@ -125,36 +125,33 @@ GpSharp/
   - stopVideo()
 
 **Settings Container (HTTP-only subset)**
-- [ ] Implement ISetting interface
+- [x] Implement ISetting interface
   - getValue<T>()
   - getCapabilities()
   - setValue<T>()
   - registerValueUpdates() → IAsyncEnumerable
   - registerCapabilityUpdates() → IAsyncEnumerable
-
-- [ ] Implement ISettingsContainer
+- [x] Implement ISettingsContainer
   - videoResolution
   - videoFrameRate
   - (and other common settings)
 
 **Statuses Container (HTTP-only subset)**
-- [ ] Implement IStatus interface
+- [x] Implement IStatus interface
   - getValue<T>()
   - registerValueUpdates() → IAsyncEnumerable
-
-- [ ] Implement IStatusesContainer
+- [x] Implement IStatusesContainer
   - internalBatteryPercentage
   - isEncoding
   - (and other common statuses)
 
 **Documentation (Phase 1 commits)**
-- [ ] Create ARCHITECTURE.md in docs/ folder
+- [x] Create ARCHITECTURE.md in docs/ folder
   - High-level architecture overview
   - Comparison with Kotlin design
   - .NET-specific decisions
   - Performance considerations
-
-- [ ] Create API_OVERVIEW.md in docs/
+- [x] Create API_OVERMSVIEW.md in docs/
   - Basic SDK usage examples
   - HTTP protocol specifics
   - Error handling
@@ -262,13 +259,13 @@ Example commits:
 ## Success Criteria
 
 Phase 1 completion:
-- [ ] Full HTTP protocol support working
-- [ ] All Commands/Settings/Statuses accessible
-- [ ] Unit test coverage >80%
-- [ ] Can discover and connect to GoPro via HTTP
-- [ ] Can get/set settings and read statuses
-- [ ] Can execute commands
-- [ ] Documentation complete in docs folder
+- [x] Full HTTP protocol support working
+- [x] All Commands/Settings/Statuses accessible
+- [x] Unit test coverage >80%
+- [x] Can discover and connect to GoPro via HTTP
+- [x] Can get/set settings and read statuses
+- [x] Can execute commands
+- [x] Documentation complete in docs folder
 
 ## Notes
 

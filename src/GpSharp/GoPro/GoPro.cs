@@ -5,12 +5,15 @@ using GpSharp.GoPro.Commands;
 using GpSharp.GoPro.Features;
 using GpSharp.GoPro.Settings;
 using GpSharp.GoPro.Status;
+using GpSharp.Network;
 
 /// <summary>
 /// The main device interface for a GoPro camera.
 /// </summary>
 public class GoPro
 {
+    private readonly IHttpConnection _connection;
+
     /// <summary>
     /// Gets a value indicating whether the GoPro is ready to accept commands.
     /// </summary>
@@ -44,11 +47,12 @@ public class GoPro
     /// <summary>
     /// Initializes a new instance of the GoPro class.
     /// </summary>
-    public GoPro()
+    public GoPro(IHttpConnection connection)
     {
-        Commands = new CommandsContainer();
-        Settings = new SettingsContainer();
-        Statuses = new StatusesContainer();
-        Features = new FeaturesContainer();
+        _connection = connection;
+        Commands = new CommandsContainer(_connection);
+        Settings = new SettingsContainer(_connection);
+        Statuses = new StatusesContainer(_connection);
+        Features = new FeaturesContainer(); 
     }
 }

@@ -5,7 +5,7 @@ using GpSharp.GoPro.Commands;
 using GpSharp.GoPro.Features;
 using GpSharp.GoPro.Settings;
 using GpSharp.GoPro.Status;
-using GpSharp.Network;
+using GpSharp.GoPro.Connectors;
 
 /// <summary>
 /// The main device interface for a GoPro camera.
@@ -53,6 +53,6 @@ public class GoPro
         Commands = new CommandsContainer(_connection);
         Settings = new SettingsContainer(_connection);
         Statuses = new StatusesContainer(_connection);
-        Features = new FeaturesContainer(); 
+        Features = new FeaturesContainer();
     }
 }

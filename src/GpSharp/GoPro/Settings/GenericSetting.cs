@@ -3,6 +3,7 @@ namespace GpSharp.GoPro.Settings;
 using System;
 using System.Threading.Tasks;
 using GpSharp.Network;
+using GpSharp.GoPro.Connectors;
 
 /// <summary>
 /// A generic implementation of a setting that performs HTTP operations.
@@ -27,7 +28,7 @@ internal class GenericSetting : ISetting
         try
         {
             var response = await _connection.GetAsync($"/settings/{_key}");
-            return default(T); 
+            return default(T);
         }
         catch
         {

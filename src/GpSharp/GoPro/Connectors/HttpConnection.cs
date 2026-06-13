@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
-namespace GpSharp.Network;
+namespace GpSharp.GoPro.Connectors;
 
 /// <summary>
 /// Handles the underlying HTTP communication with a GoPro device.

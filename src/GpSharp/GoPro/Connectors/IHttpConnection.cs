@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace GpSharp.Network;
+namespace GpSharp.GoPro.Connectors;
 
 /// <summary>
 /// Interface for HTTP communication with a GoPro device.

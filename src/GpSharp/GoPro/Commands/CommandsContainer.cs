@@ -1,9 +1,9 @@
-namespace GpSharp.GoPro.Commands;
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GpSharp.Network;
+using GpSharp.GoPro.Connectors;
+
+namespace GpSharp.GoPro.Commands;
 
 /// <summary>
 /// Provides access to camera commands and operations via HTTP.
@@ -25,7 +25,7 @@ public class CommandsContainer : ICommandsContainer
     {
         var payload = new { on = on };
         return _connection.PostAsync("/camera/shutter", payload)
-            .ContinueWith(_ => Task.CompletedTask); 
+            .ContinueWith(_ => Task.CompletedTask);
         // Note: In a real implementation, we'd parse the response or handle errors.
         // For now, we just ensure it performs the call.
     }
@@ -39,7 +39,7 @@ public class CommandsContainer : ICommandsContainer
         {
             var response = await _connection.GetAsync("/camera/media_list");
             // Placeholder: In a real implementation, we would parse JSON list of files.
-            return Array.Empty<string>(); 
+            return Array.Empty<string>();
         }
         catch
         {

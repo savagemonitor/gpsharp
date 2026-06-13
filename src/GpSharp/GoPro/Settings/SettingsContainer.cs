@@ -1,8 +1,6 @@
 namespace GpSharp.GoPro.Settings;
 
-using System;
-using System.Threading.Tasks;
-using GpSharp.Network;
+using GpSharp.GoPro.Connectors;
 
 /// <summary>
 /// Provides access to camera settings via HTTP.

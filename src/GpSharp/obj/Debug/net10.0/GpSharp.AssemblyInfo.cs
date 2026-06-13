@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GpSharp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0cc759bc8b257955a98d85b79ac00e0229314d19")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f0a63d99769c8a44f6cc9cb5f006da36f76d6d7c")]
 [assembly: System.Reflection.AssemblyProductAttribute("GpSharp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GpSharp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

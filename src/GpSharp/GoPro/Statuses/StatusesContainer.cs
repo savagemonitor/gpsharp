@@ -2,10 +2,10 @@ namespace GpSharp.GoPro.Status;
 
 using System;
 using System.Threading.Tasks;
-using GpSharp.Network;
+using GpSharp.GoPro.Connectors;
 
 /// <summary>
-/// Provides a collection of status items for the 
+/// Provides a collection of status items for the
 /// camera via HTTP.
 /// </summary>
 public class StatusesContainer : IStatusesContainer

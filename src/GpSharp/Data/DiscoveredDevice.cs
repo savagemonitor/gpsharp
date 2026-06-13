@@ -2,6 +2,7 @@ namespace GpSharp.Data;
 
 using System;
 using GpSharp.Core;
+using GpSharp.Network;
 
 /// <summary>
 /// Represents a device discovered on the network.
@@ -15,7 +16,9 @@ public class DiscoveredDevice
     public string MacAddress { get; }
     public string Model { get; }
 
-    public DiscoveredDevice(GoProId id, string name, string ipAddress, int port, string macAddress, string model)
+    public ConnectionType ConnectionType { get; }
+
+    public DiscoveredDevice(GoProId id, string name, string ipAddress, int port, string macAddress, string model, ConnectionType connectionType = ConnectionType.Unknown)
     {
         Id = id;
         Name = name;
@@ -23,20 +26,6 @@ public class DiscoveredDevice
         Port = port;
         MacAddress = macAddress;
         Model = model;
-    }
-}
-
-/// <summary>
-/// A data packet representing heartbeats or system updates from the camera.
-/// </summary>
-public class CameraHeartbeat
-{
-    public DateTime Timestamp { get; }
-    public bool IsActive { get; }
-
-    public CameraHeartbeat(DateTime timestamp, bool isActive)
-    {
-        Timestamp = timestamp;
-        IsActive = isActive;
+        ConnectionType = connectionType;
     }
 }

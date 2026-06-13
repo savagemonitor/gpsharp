@@ -171,7 +171,6 @@ GpSharp/
 - [ ] Media file access and streaming
 - [ ] Keep-alive signal management
 - [ ] Full documentation
-- [ ] Sample demo application
 - [ ] Logging and diagnostics
 
 ## Build & Testing Strategy

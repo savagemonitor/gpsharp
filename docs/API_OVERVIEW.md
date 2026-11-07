@@ -4,6 +4,9 @@
 
 `OgpSdk.DiscoverAsync` streams devices announced by the Open GoPro mDNS service. Cancelling the
 enumeration stops the read; dispose the discovery service to stop its background mDNS browse.
+Each enumeration has an independent stream, starts by replaying the currently known endpoints, and
+then receives new or changed announcements. When mDNS reports a service removal, that endpoint is
+removed from the replay cache; a later announcement makes it discoverable again.
 
 ```csharp
 using System;

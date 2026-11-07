@@ -20,10 +20,11 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
 {
     private const string GoProServiceType = "_gopro-web._tcp";
 
-    private readonly Channel<DiscoveredDevice> _discoveredDevices = Channel.CreateUnbounded<DiscoveredDevice>();
-    private readonly Dictionary<(string Host, string Instance, string InterfaceId, string IpAddress, int Port), DiscoveryInterfaceEvidence?> _seenDevices = new();
+    private readonly Dictionary<(string Host, string Instance, string InterfaceId, string IpAddress, int Port), DiscoveredDevice> _discoveredDevices = new();
+    private readonly HashSet<Channel<DiscoveredDevice>> _subscribers = new();
     private readonly object _gate = new();
     private readonly ServiceBrowser _serviceBrowser;
+    private bool _disposed;
 
     public MdnsDiscovery() : this(startBrowse: true)
     {
@@ -37,14 +38,20 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
         _serviceBrowser.ServiceRemoved += (s, e) =>
         {
             var announcement = e.Announcement;
+            var interfaceId = announcement.NetworkInterface?.Id;
             lock (_gate)
             {
-                foreach (var entry in _seenDevices.Keys.Where(entry =>
+                if (_disposed)
+                {
+                    return;
+                }
+
+                foreach (var entry in _discoveredDevices.Keys.Where(entry =>
                     entry.Host == announcement.Hostname &&
                     entry.Instance == (announcement.Instance ?? string.Empty) &&
-                    entry.InterfaceId == (announcement.NetworkInterface?.Id ?? string.Empty)).ToArray())
+                    (interfaceId is null || entry.InterfaceId == interfaceId)).ToArray())
                 {
-                    _seenDevices.Remove(entry);
+                    _discoveredDevices.Remove(entry);
                 }
             }
         };
@@ -78,7 +85,7 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
         }
         catch (NetworkInformationException error)
         {
-            _discoveredDevices.Writer.TryComplete(error);
+            CompleteSubscribers(error);
             return;
         }
 
@@ -90,24 +97,23 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
 
         lock (_gate)
         {
-            foreach (var old in _seenDevices.Keys.Where(entry =>
+            if (_disposed)
+            {
+                return;
+            }
+
+            foreach (var old in _discoveredDevices.Keys.Where(entry =>
                 entry.Host == hostname && entry.Instance == (announcement.Instance ?? string.Empty) &&
                 entry.InterfaceId == interfaceId &&
                 (entry.Port != announcement.Port || !addresses.Contains(entry.IpAddress))).ToArray())
             {
-                _seenDevices.Remove(old);
+                _discoveredDevices.Remove(old);
             }
 
             foreach (var address in addresses)
             {
                 var key = (hostname, announcement.Instance ?? string.Empty, interfaceId, address, (int)announcement.Port);
-                if (_seenDevices.TryGetValue(key, out var previousEvidence) && Equals(previousEvidence, evidence))
-                {
-                    continue;
-                }
-
-                _seenDevices[key] = evidence;
-                _discoveredDevices.Writer.TryWrite(new DiscoveredDevice(
+                var device = new DiscoveredDevice(
                     new GoProId(hostLabel[^4..]),
                     hostname,
                     address,
@@ -116,8 +122,32 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
                     "Unknown",
                     ConnectionType.Unknown,
                     evidence,
-                    announcement.Instance));
+                    announcement.Instance);
+                if (_discoveredDevices.TryGetValue(key, out var previous) &&
+                    Equals(previous.DiscoveryInterface, evidence))
+                {
+                    continue;
+                }
+
+                _discoveredDevices[key] = device;
+                foreach (var subscriber in _subscribers)
+                {
+                    subscriber.Writer.TryWrite(device);
+                }
             }
+        }
+    }
+
+    private void CompleteSubscribers(Exception error)
+    {
+        lock (_gate)
+        {
+            foreach (var subscriber in _subscribers)
+            {
+                subscriber.Writer.TryComplete(error);
+            }
+
+            _subscribers.Clear();
         }
     }
 
@@ -128,24 +158,69 @@ public class MdnsDiscovery : IDiscoveryService, IDisposable
             : address;
 
     /// <summary>
-    /// Streams GoPros announced through the Open GoPro mDNS service.
+    /// Streams GoPros announced through the Open GoPro mDNS service. Each enumeration receives
+    /// its own stream, beginning with the currently cached endpoints before live announcements.
     /// </summary>
     public async IAsyncEnumerable<DiscoveredDevice> DiscoverAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await foreach (var device in _discoveredDevices.Reader.ReadAllAsync(cancellationToken))
+        var channel = Channel.CreateUnbounded<DiscoveredDevice>();
+        lock (_gate)
         {
-            yield return device;
+            foreach (var device in _discoveredDevices.Values)
+            {
+                channel.Writer.TryWrite(device);
+            }
+
+            if (_disposed)
+            {
+                channel.Writer.TryComplete();
+            }
+            else
+            {
+                _subscribers.Add(channel);
+            }
+        }
+
+        try
+        {
+            await foreach (var device in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                yield return device;
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _subscribers.Remove(channel);
+            }
+
+            channel.Writer.TryComplete();
         }
     }
 
     public void Dispose()
     {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            foreach (var subscriber in _subscribers)
+            {
+                subscriber.Writer.TryComplete();
+            }
+
+            _subscribers.Clear();
+        }
+
         if (_serviceBrowser.IsBrowsing)
         {
             _serviceBrowser.StopBrowse();
         }
-
-        _discoveredDevices.Writer.TryComplete();
     }
 }

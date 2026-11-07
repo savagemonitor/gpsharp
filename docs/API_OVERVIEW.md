@@ -110,6 +110,29 @@ preserved as `JsonElement` and keyed by non-negative integer protocol ID (includ
 Cancellation is propagated; missing IDs,
 invalid JSON, unsupported conversions, and HTTP failures are returned as failed results.
 
+`OpenGoProProtocolCatalog.GetSetting(id)` and `GetStatus(id)` provide the documented canonical
+name, description, value kind, source URLs, and static enum options where published. They return
+`null` for IDs absent from the catalog. For numeric enum values,
+`metadata.FindOption(rawJsonValue)` returns the canonical option name or `null` for an unmapped
+value; it does not alter the `JsonElement` stored in `CameraState`. Static enum options describe
+the published superset, not the capabilities of a particular camera or current mode, so camera
+validation remains authoritative. The catalog cites the current [Open GoPro setting
+documentation](https://gopro.github.io/OpenGoPro/docs/ble/settings) and [status
+documentation](https://gopro.github.io/OpenGoPro/docs/ble/statuses), with pinned Kotlin SDK source
+links for identifiers/options present in that SDK revision
+([settings](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Settings.kt),
+[statuses](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Statuses.kt)).
+
+Against the sanitized MISSION 1 PRO identifier lists, the public catalog maps 33 of 96 setting
+IDs and 70 of 78 status IDs. The remaining identifiers are deliberately uncatalogued rather than
+assigned guessed names: settings `6, 13, 41, 42, 47, 54, 62, 64, 84, 86, 103, 105, 111, 112,
+115, 116, 117, 118, 126, 129-132, 139, 145-147, 153, 154, 159, 198, 199, 203, 205, 206,
+208-214, 218, 221, 222, 226, 258-272, 274, 275`; statuses `3, 4, 14, 61, 90, 91, 109, 119`.
+These gaps mean only that those IDs were not found in the cited public catalog, not that the
+camera itself rejects or does not implement them. Current Open GoPro docs include settings
+239, 256, 257, and 273, and status 123, even though those IDs are not all present in the pinned
+Kotlin `UByte` ID enums.
+
 These are request/response HTTP operations, not Kotlin WSDK BLE parity. BLE-backed settings/status
 semantics, capability discovery and update streams remain later-phase work. `Features` and live
 connection state are also not implemented in Phase 1.

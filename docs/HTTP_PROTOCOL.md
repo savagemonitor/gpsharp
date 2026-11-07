@@ -11,6 +11,9 @@ point.
 | `SetShutterAsync(true)` | `GET /gopro/camera/shutter/start` |
 | `SetShutterAsync(false)` | `GET /gopro/camera/shutter/stop` |
 | `GetMediaListAsync()` | `GET /gopro/media/list` |
+| `ISetting.GetValueAsync<T>()` | `GET /gopro/camera/setting?setting=<id>` |
+| `ISetting.SetValueAsync(value)` | `GET /gopro/camera/setting?setting=<id>&option=<value>` |
+| `IStatusesContainer.GetCameraStateAsync()` / `IStatus.GetValueAsync<T>()` | `GET /gopro/camera/state` |
 
 These endpoints follow the corresponding HTTP operations in the OpenGoPro Kotlin SDK.
 `HttpConnection` retries requests that fail with `HttpRequestException` up to five times and then
@@ -25,8 +28,29 @@ size may be a JSON number or a numeric string. GpSharp
 deserializes these fields into `MediaList`, `MediaDirectory`, and `MediaFile`. Unrecognized
 properties are retained in each model's `AdditionalProperties`.
 
-## Deferred operations
+## Settings and status values
 
-The Kotlin SDK implements settings and statuses over BLE, not this HTTP surface. Those GpSharp
-placeholders throw `NotSupportedException` until BLE support is implemented. Media download,
-credential-backed HTTPS, and other HTTP operations are also outside the Phase 1 subset.
+Setting and status identifiers are protocol IDs in the range `0..255`. The named settings map to
+video resolution ID `2` and video frame rate ID `3`; named statuses map to encoding ID `10` and
+internal battery percentage ID `70`. `GetSetting(int)` and `GetStatus(int)` expose other IDs.
+Setting reads deserialize the response's integer `option` into the caller's requested type;
+writes accept non-negative integer option values, including enums. The camera is authoritative and
+may reject an option.
+
+The state endpoint returns `settings` and `status` objects keyed by numeric protocol IDs. Values
+are retained as `JsonElement` in `CameraState`, allowing callers to interpret camera/model-specific
+fields without lossy conversion. `GetCameraStateAsync` reads this snapshot once; `GetStatus` reads
+a fresh snapshot for each `GetValueAsync` call. Missing IDs, malformed JSON, unsupported requested
+types, and HTTP failures are `Result<T>` failures. Cancellation propagates as
+`OperationCanceledException`.
+
+When a setting write is rejected with HTTP 403, GpSharp preserves the response as a
+`SettingRejectedException` if it contains the Open GoPro error, setting ID, option ID, and
+`supported_options` metadata. This is reactive rejection metadata, not proactive capability
+discovery.
+
+The Kotlin SDK's generic setting/status API, capability discovery, and update streams are
+BLE-backed. These HTTP operations implement the corresponding Open GoPro HTTP subset; they do not
+provide Kotlin BLE parity, automatic updates, or BLE connectivity state. Physical writes alter
+camera configuration, so the automated suite uses mocked HTTP responses only. Media download,
+credential-backed HTTPS, and other HTTP operations remain outside Phase 1.

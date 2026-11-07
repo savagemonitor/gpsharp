@@ -51,8 +51,8 @@ public class GoPro
     {
         _connection = connection;
         Commands = new CommandsContainer(_connection);
-        Settings = new SettingsContainer();
-        Statuses = new StatusesContainer();
+        Settings = new SettingsContainer(_connection);
+        Statuses = new StatusesContainer(_connection);
         Features = new FeaturesContainer();
     }
 }

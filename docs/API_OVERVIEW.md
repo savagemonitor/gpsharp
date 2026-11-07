@@ -81,9 +81,34 @@ They cover camera name, last captured media, turbo transfer, COHN, and their sha
 They provide serialization only; the SDK does not yet implement the corresponding protobuf
 command transport. The schemas and their source attribution are in `src\GpSharp\Protos\OpenGoPro`.
 
-## Deferred containers
+## Settings and statuses
 
-`Settings` and `Statuses` remain present as API placeholders, but the Kotlin SDK routes their
-operations over BLE. Calls currently throw `NotSupportedException`; these operations are planned
-for the BLE phase. The features container and BLE connection state are likewise not implemented in
-Phase 1.
+The settings container supports direct reads and writes through Open GoPro HTTP. The named
+`VideoResolution` and `VideoFrameRate` settings use protocol IDs 2 and 3. Other byte-range protocol
+IDs can be accessed with `camera.Settings.GetSetting(id)`. For example:
+
+```csharp
+var resolution = await camera.Settings.VideoResolution.GetValueAsync<int>();
+if (resolution.IsSuccess)
+{
+    Console.WriteLine($"Resolution option: {resolution.Value}");
+}
+
+// Setting writes change camera configuration; the camera validates the option.
+var update = await camera.Settings.VideoResolution.SetValueAsync(9);
+```
+
+Writes accept non-negative integer values or enums and return a failed `Result<Unit>` for
+validation, transport, or camera rejection. A rejected HTTP 403 can include
+`SettingRejectedException.SupportedOptions`. This metadata is available only when the camera
+includes it in the rejection response; GpSharp does not query capabilities proactively.
+
+`camera.Statuses.GetStatus(id).GetValueAsync<T>()` reads from a fresh camera-state response. Named
+statuses are `IsEncoding` (ID 10) and `InternalBatteryPercentage` (ID 70).
+`GetCameraStateAsync()` returns the full `CameraState` snapshot, with setting and status values
+preserved as `JsonElement` and keyed by protocol ID. Cancellation is propagated; missing IDs,
+invalid JSON, unsupported conversions, and HTTP failures are returned as failed results.
+
+These are request/response HTTP operations, not Kotlin WSDK BLE parity. BLE-backed settings/status
+semantics, capability discovery and update streams remain later-phase work. `Features` and live
+connection state are also not implemented in Phase 1.

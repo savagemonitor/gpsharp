@@ -1,16 +1,33 @@
 namespace GpSharp.GoPro.Statuses;
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using GpSharp.Core;
+using GpSharp.Data;
+using GpSharp.GoPro.Connectors;
+using GpSharp.GoPro.Settings;
+
 /// <summary>
-/// Provides status API placeholders until BLE support is implemented.
+/// Provides access to camera status values over the Open GoPro HTTP API.
 /// </summary>
 public class StatusesContainer : IStatusesContainer
 {
     public IStatus InternalBatteryPercentage { get; }
     public IStatus IsEncoding { get; }
 
-    public StatusesContainer()
+    private readonly CameraStateClient _stateClient;
+
+    public StatusesContainer(IHttpConnection connection)
     {
-        InternalBatteryPercentage = new GenericStatus("internal_battery_percentage");
-        IsEncoding = new GenericStatus("is_encoding");
+        _stateClient = new CameraStateClient(connection);
+        InternalBatteryPercentage = new GenericStatus(70, _stateClient);
+        IsEncoding = new GenericStatus(10, _stateClient);
     }
+
+    public IStatus GetStatus(int statusId) =>
+        new GenericStatus(SettingsContainer.ValidateId(statusId, nameof(statusId)), _stateClient);
+
+    public Task<Result<CameraState>> GetCameraStateAsync(CancellationToken cancellationToken = default) =>
+        _stateClient.GetAsync(cancellationToken);
 }

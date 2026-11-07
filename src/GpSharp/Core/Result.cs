@@ -5,7 +5,7 @@ using System;
 /// <summary>
 /// Represents the result of an operation which may or may not have succeeded.
 /// </summary>
-public class Result<T> where T : class?
+public class Result<T>
 {
     public T? Value { get; }
     public Exception? Error { get; }

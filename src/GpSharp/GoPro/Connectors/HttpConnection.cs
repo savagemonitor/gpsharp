@@ -1,6 +1,8 @@
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GpSharp.GoPro.Connectors;
@@ -30,30 +32,48 @@ public class HttpConnection : IHttpConnection, IDisposable
 
     public async Task<string> GetAsync(string path)
     {
-        return await SendAsync(() => _httpClient.GetAsync(path));
+        return await SendAsync(_ => _httpClient.GetAsync(path), CancellationToken.None);
+    }
+
+    public async Task<string> GetAsync(string path, CancellationToken cancellationToken)
+    {
+        return await SendAsync(token => _httpClient.GetAsync(path, token), cancellationToken);
     }
 
     public async Task<string> PostAsync(string path, object content)
     {
-        return await SendAsync(() => _httpClient.PostAsJsonAsync(path, content));
+        return await SendAsync(_ => _httpClient.PostAsJsonAsync(path, content), CancellationToken.None);
     }
 
     public async Task<string> PutAsync<T>(string path, T content)
     {
-        return await SendAsync(() => _httpClient.PutAsJsonAsync(path, content));
+        return await SendAsync(_ => _httpClient.PutAsJsonAsync(path, content), CancellationToken.None);
     }
 
-    private static async Task<string> SendAsync(Func<Task<HttpResponseMessage>> send)
+    private static async Task<string> SendAsync(
+        Func<CancellationToken, Task<HttpResponseMessage>> send,
+        CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
         {
             try
             {
-                using var response = await send();
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
+                using var response = await send(cancellationToken).ConfigureAwait(false);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpResponseException(response.StatusCode, body);
+                }
+
+                return body;
             }
-            catch (HttpRequestException) when (attempt < HttpRetries - 1)
+            catch (HttpResponseException error) when (
+                (int)error.ResponseStatusCode >= (int)HttpStatusCode.InternalServerError &&
+                attempt < HttpRetries - 1)
+            {
+            }
+            catch (HttpRequestException error) when (
+                error.StatusCode is null && attempt < HttpRetries - 1)
             {
             }
         }

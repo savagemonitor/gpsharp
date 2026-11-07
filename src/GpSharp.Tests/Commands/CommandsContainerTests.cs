@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using GpSharp.Core;
@@ -140,18 +141,24 @@ public class CommandsContainerTests
     }
 
     [Fact]
-    public async Task SettingsAndStatuses_ShouldExplainThatTheyRequireBle()
+    public async Task SettingsAndStatuses_ShouldUseHttpProtocolBackedContainers()
     {
-        var goPro = new GpSharp.GoPro.GoPro(new Mock<IHttpConnection>().Object);
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/setting?setting=2", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"option\":9}");
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"status\":{\"10\":1,\"70\":64},\"settings\":{\"3\":8}}");
+        var goPro = new GpSharp.GoPro.GoPro(connection.Object);
 
-        Func<Task> readSetting = async () =>
-            await goPro.Settings.VideoResolution.GetValueAsync<int>();
-        Func<Task> readStatus = async () =>
-            await goPro.Statuses.InternalBatteryPercentage.GetValueAsync<int>();
+        var resolution = await goPro.Settings.VideoResolution.GetValueAsync<int>();
+        var encoding = await goPro.Statuses.IsEncoding.GetValueAsync<int>();
+        var batteryPercentage = await goPro.Statuses.InternalBatteryPercentage.GetValueAsync<int>();
 
-        await readSetting.Should().ThrowAsync<NotSupportedException>()
-            .WithMessage("*requires BLE support*");
-        await readStatus.Should().ThrowAsync<NotSupportedException>()
-            .WithMessage("*requires BLE support*");
+        resolution.IsSuccess.Should().BeTrue();
+        resolution.Value.Should().Be(9);
+        encoding.IsSuccess.Should().BeTrue();
+        encoding.Value.Should().Be(1);
+        batteryPercentage.IsSuccess.Should().BeTrue();
+        batteryPercentage.Value.Should().Be(64);
     }
 }

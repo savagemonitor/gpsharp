@@ -56,6 +56,12 @@ table](https://gopro.github.io/OpenGoPro/docs/ble/settings) and [statuses
 table](https://gopro.github.io/OpenGoPro/docs/ble/statuses), cross-referenced to the pinned
 [Kotlin settings enum](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Settings.kt)
 and [status ID enum](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Statuses.kt).
+Status type decoding follows the generated [Open GoPro status parser](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/python/sdk_wireless_camera_control/open_gopro/api/ble_statuses.py);
+the complete ID-to-type-to-CLR mapping is maintained in [STATUS_TYPES.md](STATUS_TYPES.md).
+`CameraProtocolValueMetadata.TryGetTypedValue` yields the documented scalar CLR value or a
+`CameraProtocolOption` for known enum codes. `IStatus.GetValueAsync<T>()` can independently
+deserialize scalar, array, object, or `JsonElement` values from HTTP state; this does not reinterpret
+or discard the raw snapshot value.
 The docs include newer setting IDs 239, 256, 257, and 273 and status ID 123 that the Kotlin
 `UByte` identifier enums do not yet include. The sanitized snapshot's IDs absent from those
 sources remain explicitly uncatalogued: settings `6, 13, 41, 42, 47, 54, 62, 64, 84, 86, 103,

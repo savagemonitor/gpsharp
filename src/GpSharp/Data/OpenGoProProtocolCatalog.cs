@@ -18,6 +18,8 @@ public static class OpenGoProProtocolCatalog
         "https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Settings.kt";
     private const string StatusesSdkSource =
         "https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Statuses.kt";
+    private const string StatusesTypeSource =
+        "https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/python/sdk_wireless_camera_control/open_gopro/api/ble_statuses.py";
 
     private static readonly IReadOnlyDictionary<int, CameraProtocolValueMetadata> Settings =
         new ReadOnlyDictionary<int, CameraProtocolValueMetadata>(CreateSettings());
@@ -244,7 +246,7 @@ public static class OpenGoProProtocolCatalog
                 (0, "NEVER_STARTED"), (1, "STARTED"), (2, "ABORTED"), (3, "CANCELED"), (4, "COMPLETED")),
             Status(26, "Remote Version", "Unsigned 8-bit integer", "Wireless remote-control version."),
             Status(27, "Remote Connected", "Boolean", "Is a wireless remote control connected?"),
-            Status(28, "Pairing State (Legacy)"),
+            Status(28, "Pairing State (Legacy)", "Unknown"),
             Status(29, "Connected Wi-Fi SSID", "String", "Network name when the camera is operating as a Wi-Fi station."),
             Status(30, "Access Point SSID", "String", "Network name the camera advertises in access-point mode."),
             Status(31, "Connected Devices", "Unsigned 8-bit integer", "Number of wireless devices connected to the camera."),
@@ -339,7 +341,7 @@ public static class OpenGoProProtocolCatalog
             Status(117, "SD Card Capacity", "Unsigned 32-bit integer", "Total SD card capacity in kilobytes."),
             Status(118, "Photo Interval Capture Count", "Unsigned 32-bit integer"),
             Status(122, "Camera Name", "UTF-8 string", "Custom camera name."),
-            Status(123, "Active Preset Is Custom", null),
+            Status(123, "Active Preset Is Custom", "Unknown"),
         };
 
         return ToDictionary(entries);
@@ -352,7 +354,7 @@ public static class OpenGoProProtocolCatalog
         string? description = null,
         params (long Value, string Name)[] options) =>
         Create(id, name, description, valueKind, SettingsDocumentation + id,
-            id <= 237 ? SettingsSdkSource : null, options);
+            id <= 237 ? SettingsSdkSource : null, id <= 237 ? SettingsSdkSource : null, options);
 
     private static (long Value, string Name)[] EasyModeSpeedOptions() =>
     [
@@ -453,7 +455,8 @@ public static class OpenGoProProtocolCatalog
         string? description = null,
         params (long Value, string Name)[] options) =>
         Create(id, name, description, valueKind, StatusesDocumentation + id,
-            id <= 122 ? StatusesSdkSource : null, options);
+            id <= 122 ? StatusesSdkSource : null,
+            id is >= 1 and <= 122 and not 28 ? StatusesTypeSource : null, options);
 
     private static CameraProtocolValueMetadata Create(
         int id,
@@ -462,6 +465,7 @@ public static class OpenGoProProtocolCatalog
         string? valueKind,
         string documentationUrl,
         string? sdkSourceUrl,
+        string? typeSourceUrl,
         (long Value, string Name)[] options)
     {
         var mappedOptions = new CameraProtocolOption[options.Length];
@@ -471,7 +475,7 @@ public static class OpenGoProProtocolCatalog
         }
 
         return new CameraProtocolValueMetadata(
-            id, name, description, valueKind, documentationUrl, sdkSourceUrl,
+            id, name, description, valueKind, documentationUrl, sdkSourceUrl, typeSourceUrl,
             System.Array.AsReadOnly(mappedOptions));
     }
 

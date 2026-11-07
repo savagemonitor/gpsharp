@@ -122,6 +122,12 @@ documentation](https://gopro.github.io/OpenGoPro/docs/ble/statuses), with pinned
 links for identifiers/options present in that SDK revision
 ([settings](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Settings.kt),
 [statuses](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Statuses.kt)).
+For a documented type, `metadata.ClrType` and `metadata.TryGetTypedValue(rawValue, out value)`
+expose its scalar CLR type or a `CameraProtocolOption` for known enum codes. The current source-backed
+type table is in [STATUS_TYPES.md](STATUS_TYPES.md); its wire type mappings follow the pinned
+[Open GoPro BLE status parser](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/python/sdk_wireless_camera_control/open_gopro/api/ble_statuses.py).
+Array/object JSON values remain consumable through `GetValueAsync<T>()` or as raw `JsonElement`,
+even when no protocol type is documented.
 
 Against the sanitized MISSION 1 PRO identifier lists, the public catalog maps 33 of 96 setting
 IDs and 70 of 78 status IDs. The remaining identifiers are deliberately uncatalogued rather than

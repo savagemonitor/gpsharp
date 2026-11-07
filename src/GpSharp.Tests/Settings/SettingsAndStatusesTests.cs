@@ -124,6 +124,66 @@ public class SettingsAndStatusesTests
     }
 
     [Fact]
+    public void StatusMetadata_ShouldDecodeDocumentedScalarEnumAndStringTypes()
+    {
+        var boolean = OpenGoProProtocolCatalog.GetStatus(10)!;
+        var unsignedByte = OpenGoProProtocolCatalog.GetStatus(70)!;
+        var enumValue = OpenGoProProtocolCatalog.GetStatus(2)!;
+        var text = OpenGoProProtocolCatalog.GetStatus(29)!;
+        using var boolJson = JsonDocument.Parse("true");
+        using var byteJson = JsonDocument.Parse("87");
+        using var enumJson = JsonDocument.Parse("4");
+        using var unknownEnumJson = JsonDocument.Parse("99");
+        using var textJson = JsonDocument.Parse("\"camera-network\"");
+
+        boolean.ClrType.Should().Be(typeof(bool));
+        boolean.TryGetTypedValue(boolJson.RootElement, out var decodedBool).Should().BeTrue();
+        decodedBool.Should().Be(true);
+
+        unsignedByte.ClrType.Should().Be(typeof(byte));
+        unsignedByte.TypeSourceUrl.Should().Contain("ble_statuses.py");
+        unsignedByte.TryGetTypedValue(byteJson.RootElement, out var decodedByte).Should().BeTrue();
+        decodedByte.Should().Be((byte)87);
+
+        enumValue.ClrType.Should().Be(typeof(CameraProtocolOption));
+        enumValue.TryGetTypedValue(enumJson.RootElement, out var decodedEnum).Should().BeTrue();
+        decodedEnum.Should().Be(new CameraProtocolOption(4, "CHARGING"));
+        enumValue.TryGetTypedValue(unknownEnumJson.RootElement, out var unknownEnum).Should().BeFalse();
+        unknownEnum.Should().BeNull();
+        enumJson.RootElement.GetInt32().Should().Be(4);
+
+        text.ClrType.Should().Be(typeof(string));
+        text.TryGetTypedValue(textJson.RootElement, out var decodedText).Should().BeTrue();
+        decodedText.Should().Be("camera-network");
+        OpenGoProProtocolCatalog.GetStatus(28)!.ClrType.Should().BeNull();
+        OpenGoProProtocolCatalog.GetStatus(123)!.ValueKind.Should().Be("Unknown");
+    }
+
+    [Fact]
+    public void StatusCatalog_ShouldProvideTypesForEveryStatusWithPublishedParserMetadata()
+    {
+        int[] typedStatusIds =
+        [
+            1, 2, 6, 8, 9, 10, 11, 13, 17, 19, 20, 21, 22, 23, 24, 26, 27, 29, 30, 31, 32, 33,
+            34, 35, 38, 39, 41, 42, 45, 49, 54, 55, 56, 58, 59, 60, 65, 66, 67, 68, 69, 70,
+            74, 75, 76, 77, 78, 79, 81, 82, 83, 85, 86, 88, 89, 93, 94, 95, 96, 97, 98, 99,
+            100, 101, 102, 103, 104, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 116,
+            117, 118, 122,
+        ];
+
+        foreach (var id in typedStatusIds)
+        {
+            var metadata = OpenGoProProtocolCatalog.GetStatus(id);
+            metadata.Should().NotBeNull($"status {id} is in the published SDK parser");
+            metadata!.ClrType.Should().NotBeNull($"status {id} has a documented value type");
+            metadata.TypeSourceUrl.Should().Contain("ble_statuses.py");
+        }
+
+        OpenGoProProtocolCatalog.GetStatus(28)!.ClrType.Should().BeNull();
+        OpenGoProProtocolCatalog.GetStatus(123)!.ClrType.Should().BeNull();
+    }
+
+    [Fact]
     public void ProtocolCatalog_ShouldCoverPublishedIdsInSanitizedCameraSnapshot()
     {
         int[] documentedSettings =
@@ -182,6 +242,23 @@ public class SettingsAndStatusesTests
         result.Value.Statuses[91].GetString().Should().Be("future-value");
         OpenGoProProtocolCatalog.GetSettingDisplayName(258).Should().Be("Uncatalogued setting (ID 258)");
         OpenGoProProtocolCatalog.GetStatusDisplayName(91).Should().Be("Uncatalogued status (ID 91)");
+    }
+
+    [Fact]
+    public async Task GenericStatusReads_ShouldDeserializeArrayAndObjectJsonWithoutLoss()
+    {
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"status\":{\"90\":{\"count\":3},\"91\":[2,4]},\"settings\":{}}");
+        var statuses = new StatusesContainer(connection.Object);
+
+        var array = await statuses.GetStatus(91).GetValueAsync<int[]>();
+        var objectValue = await statuses.GetStatus(90).GetValueAsync<Dictionary<string, int>>();
+
+        array.IsSuccess.Should().BeTrue();
+        array.Value.Should().Equal(2, 4);
+        objectValue.IsSuccess.Should().BeTrue();
+        objectValue.Value.Should().ContainKey("count").WhoseValue.Should().Be(3);
     }
 
     [Fact]

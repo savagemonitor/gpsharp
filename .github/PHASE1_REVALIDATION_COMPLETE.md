@@ -64,7 +64,7 @@ GpSharp.Tests net10.0 succeeded → src\GpSharp.Tests\bin\Debug\net10.0\GpSharp.
 
 ### Warnings (Non-blocking)
 - System.Text.Json package unnecessary (but not harmful)
-- System.Text.Json has known vulnerabilities (can update in next phase)
+- This historical build used a vulnerable System.Text.Json version; the current project dependency was subsequently upgraded to 10.0.14 and re-audited on November 7, 2026.
 - Some nullability warnings in Settings/Statuses containers (can refine later)
 
 ---

@@ -24,3 +24,8 @@ The SDK follows a layered architecture inspired by the OpenGoPro Kotlin Multipla
 - **TDD Pattern:** Follow a Test-Driven Development approach. Write the xstring xUnit test in the `GpSharp.Tests` project before implementing the corresponding logic in `GpSharp`. Verify that tests fail first, then implement the minimum code to pass the test, and finally refactor as needed while keeping tests green.  
 - **Interface-Driven Design:** Always implement features against their respective interfaces (`ICommandsContainer`, etc.) to support multi-transport (HTTP/BLE) and easier mocking with Moq.
 - **Nullability:** Nullable reference types are enabled. Pay close attention to nullability annotations to ensure API safety.
+
+## Security and Vulnerability Handling
+- When a CVE or other vulnerability is discovered in a dependency or in project code, promptly assess whether it applies and address it with a supported fix or mitigation.
+- If a fix is blocked, report the concrete blocker, affected versions or paths, and a safe interim mitigation. Do not silently ignore or defer known vulnerabilities.
+- Never commit or expose secrets, credentials, or tokens. Sanitize sensitive user, device, and account data from logs, tests, issues, and reports.

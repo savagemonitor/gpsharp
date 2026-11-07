@@ -5,7 +5,7 @@ using System;
 /// <summary>
 /// Represents a GoPro identification based on the last four characters of its serial number.
 /// </summary>
-public class GoProId
+public sealed record GoProId
 {
     public string PartialSerial { get; }
 

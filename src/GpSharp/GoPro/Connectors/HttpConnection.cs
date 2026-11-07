@@ -10,6 +10,7 @@ namespace GpSharp.GoPro.Connectors;
 /// </summary>
 public class HttpConnection : IHttpConnection, IDisposable
 {
+    private const int HttpRetries = 5;
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
 
@@ -29,23 +30,33 @@ public class HttpConnection : IHttpConnection, IDisposable
 
     public async Task<string> GetAsync(string path)
     {
-        var response = await _httpClient.GetAsync(path);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
+        return await SendAsync(() => _httpClient.GetAsync(path));
     }
 
     public async Task<string> PostAsync(string path, object content)
     {
-        var response = await _httpClient.PostAsJsonAsync(path, content);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
+        return await SendAsync(() => _httpClient.PostAsJsonAsync(path, content));
     }
 
     public async Task<string> PutAsync<T>(string path, T content)
     {
-        var response = await _httpClient.PutAsJsonAsync(path, content);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
+        return await SendAsync(() => _httpClient.PutAsJsonAsync(path, content));
+    }
+
+    private static async Task<string> SendAsync(Func<Task<HttpResponseMessage>> send)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                using var response = await send();
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (HttpRequestException) when (attempt < HttpRetries - 1)
+            {
+            }
+        }
     }
 
     public void Dispose()

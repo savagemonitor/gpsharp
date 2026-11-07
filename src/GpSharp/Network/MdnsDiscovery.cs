@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using GpSharp.Core;
 using GpSharp.Data;
 using Tmds.MDns;
-using System.Collections.Concurrent;
 
 namespace GpSharp.Network;
 
@@ -16,61 +18,134 @@ namespace GpSharp.Network;
 /// </summary>
 public class MdnsDiscovery : IDiscoveryService, IDisposable
 {
-    private const string UsbServiceType = "_workstation._tcp";
+    private const string GoProServiceType = "_gopro-web._tcp";
 
-    private ConcurrentBag<DiscoveredDevice> _discoveredDevices = new();
-    private ServiceBrowser _serviceBrowser;
+    private readonly Channel<DiscoveredDevice> _discoveredDevices = Channel.CreateUnbounded<DiscoveredDevice>();
+    private readonly Dictionary<(string Host, string Instance, string InterfaceId, string IpAddress, int Port), DiscoveryInterfaceEvidence?> _seenDevices = new();
+    private readonly object _gate = new();
+    private readonly ServiceBrowser _serviceBrowser;
 
-    public MdnsDiscovery()
+    public MdnsDiscovery() : this(startBrowse: true)
+    {
+    }
+
+    internal MdnsDiscovery(bool startBrowse)
     {
         _serviceBrowser = new ServiceBrowser();
-        _serviceBrowser.ServiceAdded += (s, e) =>
+        _serviceBrowser.ServiceAdded += (s, e) => HandleAnnouncement(e.Announcement);
+        _serviceBrowser.ServiceChanged += (s, e) => HandleAnnouncement(e.Announcement);
+        _serviceBrowser.ServiceRemoved += (s, e) =>
         {
-            // When a new service is announced, we need to figure out if it's a camera or something else.
-            // All GoPros seem to announce with a hostname that starts with "C" and is their serial number.
-            // We also know that any GoPros connected over USB will have an IP address of "172.2X.1YZ.51" where XYZ are the last three digits of the serial number.
-            // Thus we can see if the Hostname starts with "C" and if the IP address matches the expected pattern for a USB-connected GoPro.
-            if(e.Announcement.Type == UsbServiceType &&
-               e.Announcement.Hostname.StartsWith("C"))
+            var announcement = e.Announcement;
+            lock (_gate)
             {
-                string expectedIp = $"172.2{e.Announcement.Hostname[e.Announcement.Hostname.Length-3]}.1{e.Announcement.Hostname.Substring(e.Announcement.Hostname.Length-2, 2)}.51";
-                if(e.Announcement.Addresses.Any(addr => addr.ToString() == expectedIp))
+                foreach (var entry in _seenDevices.Keys.Where(entry =>
+                    entry.Host == announcement.Hostname &&
+                    entry.Instance == (announcement.Instance ?? string.Empty) &&
+                    entry.InterfaceId == (announcement.NetworkInterface?.Id ?? string.Empty)).ToArray())
                 {
-                    _discoveredDevices.Add(new DiscoveredDevice(
-                        new GoProId(e.Announcement.Hostname.Substring(e.Announcement.Hostname.Length-4, 4)),
-                        e.Announcement?.Hostname ?? "Unknown",
-                        e.Announcement?.Addresses.FirstOrDefault()?.ToString() ?? string.Empty,
-                        e.Announcement?.Port ?? 0,
-                        "Unknown", // MAC address not available via mDNS
-                        "Unknown",  // Model not available via mDNS
-                        ConnectionType.UniversalSerialBus
-                    ));
+                    _seenDevices.Remove(entry);
                 }
             }
         };
-        _serviceBrowser.StartBrowse(UsbServiceType);
-
+        if (startBrowse)
+        {
+            _serviceBrowser.StartBrowse(GoProServiceType);
+        }
     }
 
-    /// <summary>
-    /// Scans the network for GoPros by browsing for mDNS service announcements.
-    /// </summary>
-    public async Task<IEnumerable<DiscoveredDevice>> DiscoverAsync(CancellationToken cancellationToken = default)
+    private void HandleAnnouncement(ServiceAnnouncement announcement)
     {
-        return _discoveredDevices.ToList();
+        if (!string.Equals(
+                announcement.Type.TrimEnd('.'),
+                GoProServiceType,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var hostname = announcement.Hostname;
+        var hostLabel = hostname.Split('.', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (hostLabel is null || hostLabel.Length < 4)
+        {
+            return;
+        }
+
+        DiscoveryInterfaceEvidence? evidence;
+        try
+        {
+            evidence = TransportEvidenceResolver.Resolve(announcement.NetworkInterface, hostLabel);
+        }
+        catch (NetworkInformationException error)
+        {
+            _discoveredDevices.Writer.TryComplete(error);
+            return;
+        }
+
+        var interfaceId = evidence?.InterfaceId ?? string.Empty;
+        var addresses = announcement.Addresses
+            .Select(address => ScopeAddress(address, evidence?.IPv6Index))
+            .Select(address => address.ToString())
+            .ToHashSet(StringComparer.Ordinal);
+
+        lock (_gate)
+        {
+            foreach (var old in _seenDevices.Keys.Where(entry =>
+                entry.Host == hostname && entry.Instance == (announcement.Instance ?? string.Empty) &&
+                entry.InterfaceId == interfaceId &&
+                (entry.Port != announcement.Port || !addresses.Contains(entry.IpAddress))).ToArray())
+            {
+                _seenDevices.Remove(old);
+            }
+
+            foreach (var address in addresses)
+            {
+                var key = (hostname, announcement.Instance ?? string.Empty, interfaceId, address, (int)announcement.Port);
+                if (_seenDevices.TryGetValue(key, out var previousEvidence) && Equals(previousEvidence, evidence))
+                {
+                    continue;
+                }
+
+                _seenDevices[key] = evidence;
+                _discoveredDevices.Writer.TryWrite(new DiscoveredDevice(
+                    new GoProId(hostLabel[^4..]),
+                    hostname,
+                    address,
+                    announcement.Port,
+                    "Unknown",
+                    "Unknown",
+                    ConnectionType.Unknown,
+                    evidence,
+                    announcement.Instance));
+            }
+        }
+    }
+
+    internal static IPAddress ScopeAddress(IPAddress address, int? interfaceIndex) =>
+        address.AddressFamily == AddressFamily.InterNetworkV6 && address.IsIPv6LinkLocal &&
+        interfaceIndex is > 0
+            ? new IPAddress(address.GetAddressBytes(), interfaceIndex.Value)
+            : address;
+
+    /// <summary>
+    /// Streams GoPros announced through the Open GoPro mDNS service.
+    /// </summary>
+    public async IAsyncEnumerable<DiscoveredDevice> DiscoverAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var device in _discoveredDevices.Reader.ReadAllAsync(cancellationToken))
+        {
+            yield return device;
+        }
     }
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing && (_serviceBrowser?.IsBrowsing ?? false))
+        if (_serviceBrowser.IsBrowsing)
         {
-            _serviceBrowser?.StopBrowse();
+            _serviceBrowser.StopBrowse();
         }
+
+        _discoveredDevices.Writer.TryComplete();
     }
 }

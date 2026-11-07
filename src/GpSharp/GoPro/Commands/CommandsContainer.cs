@@ -1,6 +1,9 @@
 using System;
-using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
+using GpSharp.Core;
+using GpSharp.Data;
 using GpSharp.GoPro.Connectors;
 
 namespace GpSharp.GoPro.Commands;
@@ -21,53 +24,39 @@ public class CommandsContainer : ICommandsContainer
     /// Sets the shutter state (record on/off).
     /// </summary>
     /// <param name="on">True to start recording, false to stop.</param>
-    public Task SetShutterAsync(bool on)
+    public async Task<Result<Unit>> SetShutterAsync(bool on)
     {
-        var payload = new { on = on };
-        return _connection.PostAsync("/camera/shutter", payload)
-            .ContinueWith(_ => Task.CompletedTask);
-        // Note: In a real implementation, we'd parse the response or handle errors.
-        // For now, we just ensure it performs the call.
+        var action = on ? "start" : "stop";
+        try
+        {
+            await _connection.GetAsync($"/gopro/camera/shutter/{action}");
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (HttpRequestException error)
+        {
+            return Result<Unit>.Failure(error);
+        }
     }
 
     /// <summary>
-    /// Gets the list of media files on the camera.
+    /// Gets the camera media list.
     /// </summary>
-    public async Task<IEnumerable<string>> GetMediaListAsync()
+    public async Task<Result<MediaList>> GetMediaListAsync()
     {
         try
         {
-            var response = await _connection.GetAsync("/camera/media_list");
-            // Placeholder: In a real implementation, we would parse JSON list of files.
-            return Array.Empty<string>();
+            var response = await _connection.GetAsync("/gopro/media/list");
+            var mediaList = JsonSerializer.Deserialize<MediaList>(response)
+                ?? throw new JsonException("The GoPro media list response was empty.");
+            return Result<MediaList>.Success(mediaList);
         }
-        catch
+        catch (HttpRequestException error)
         {
-            return Array.Empty<string>();
+            return Result<MediaList>.Failure(error);
         }
-    }
-
-    /// <summary>
-    /// Captures a single photo.
-    /// </summary>
-    public async Task CapturePhotoAsync()
-    {
-        await _connection.PostAsync("/camera/capture_photo", new { });
-    }
-
-    /// <summary>
-    /// Starts video recording.
-    /// </summary>
-    public async Task StartVideoAsync()
-    {
-        await _connection.PostAsync("/camera/start_video", new { });
-    }
-
-    /// <summary>
-    /// Stops video recording.
-    /// </summary>
-    public async Task StopVideoAsync()
-    {
-        await _connection.PostAsync("/camera/stop_video", new { });
+        catch (JsonException error)
+        {
+            return Result<MediaList>.Failure(error);
+        }
     }
 }

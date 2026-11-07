@@ -1,4 +1,8 @@
-# Phase 1 Verification Report
+# Historical Phase 1 Verification Report
+
+> Historical audit dated June 11, 2026. Its file paths, findings, and status refer to that checkout
+> and are not the current implementation status. See `docs/ROADMAP.md` and the current parity
+> analysis in `.github/KOTLIN_vs_CSHARP_ANALYSIS.md`.
 
 **Date:** June 11, 2026  
 **Reviewed by:** Copilot CLI  

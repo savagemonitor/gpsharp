@@ -2,6 +2,8 @@ namespace GpSharp.Core;
 
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using GpSharp.Data;
@@ -24,24 +26,28 @@ public class OgpSdk
     /// <summary>
     /// Discovers available GoPros on the network.
     /// </summary>
-    public async Task<IEnumerable<DiscoveredDevice>> DiscoverAsync(CancellationToken cancellationToken = default)
-    {
-        return await _discoveryService.DiscoverAsync(cancellationToken);
-    }
+    public IAsyncEnumerable<DiscoveredDevice> DiscoverAsync(CancellationToken cancellationToken = default) =>
+        _discoveryService.DiscoverAsync(cancellationToken);
 
     /// <summary>
     /// Connects to a discovered GoPro device.
     /// </summary>
     /// <param name="device">The discovered device.</param>
     /// <returns>A connected GoPro instance.</returns>
-    public async Task<GoPro> ConnectAsync(DiscoveredDevice device)
+    public Task<GoPro> ConnectAsync(DiscoveredDevice device)
     {
-        var baseUrl = $"http://{device.IpAddress}:{device.Port}";
+        if (IPAddress.TryParse(device.IpAddress, out var address) &&
+            address.AddressFamily == AddressFamily.InterNetworkV6 && address.IsIPv6LinkLocal && address.ScopeId == 0)
+        {
+            throw new ArgumentException("A link-local IPv6 camera address requires an interface scope.", nameof(device));
+        }
+
+        var baseUrl = new UriBuilder(Uri.UriSchemeHttp, device.IpAddress, device.Port).Uri.OriginalString;
         var connection = new HttpConnection(baseUrl);
         var goPro = new GoPro(connection);
 
         _connectedGoPros[device.Id] = goPro;
-        return await Task.FromResult(goPro); // Wrapping in Task to maintain async signature if needed, though it's sync here
+        return Task.FromResult(goPro);
     }
 
     /// <summary>

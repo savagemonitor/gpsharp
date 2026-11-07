@@ -17,8 +17,10 @@ public class DiscoveredDevice
     public string Model { get; }
 
     public ConnectionType ConnectionType { get; }
+    public DiscoveryInterfaceEvidence? DiscoveryInterface { get; }
+    public string? ServiceInstance { get; }
 
-    public DiscoveredDevice(GoProId id, string name, string ipAddress, int port, string macAddress, string model, ConnectionType connectionType = ConnectionType.Unknown)
+    public DiscoveredDevice(GoProId id, string name, string ipAddress, int port, string macAddress, string model, ConnectionType connectionType = ConnectionType.Unknown, DiscoveryInterfaceEvidence? discoveryInterface = null, string? serviceInstance = null)
     {
         Id = id;
         Name = name;
@@ -27,5 +29,7 @@ public class DiscoveredDevice
         MacAddress = macAddress;
         Model = model;
         ConnectionType = connectionType;
+        DiscoveryInterface = discoveryInterface;
+        ServiceInstance = serviceInstance;
     }
 }

@@ -1,4 +1,8 @@
-# Phase 1 Re-Validation Report - FIXES COMPLETE
+# Historical Phase 1 Buildability Re-Validation
+
+> Historical report dated June 11, 2026. "Builds" in this report only described compilation at that
+> time and did not verify real camera functionality; it is superseded by `docs/ROADMAP.md` and
+> `.github/KOTLIN_vs_CSHARP_ANALYSIS.md`.
 
 **Date:** June 11, 2026  
 **Reviewed by:** Copilot CLI  

@@ -1,21 +1,16 @@
 namespace GpSharp.GoPro.Settings;
 
-using GpSharp.GoPro.Connectors;
-
 /// <summary>
-/// Provides access to camera settings via HTTP.
+/// Provides setting API placeholders until BLE support is implemented.
 /// </summary>
 public class SettingsContainer : ISettingsContainer
 {
-    private readonly IHttpConnection _connection;
-
     public ISetting VideoResolution { get; }
     public ISetting VideoFrameRate { get; }
 
-    public SettingsContainer(IHttpConnection connection)
+    public SettingsContainer()
     {
-        _connection = connection;
-        VideoResolution = new GenericSetting(_connection, "video_resolution");
-        VideoFrameRate = new GenericSetting(_connection, "video_frame_rate");
+        VideoResolution = new GenericSetting("video_resolution");
+        VideoFrameRate = new GenericSetting("video_frame_rate");
     }
 }

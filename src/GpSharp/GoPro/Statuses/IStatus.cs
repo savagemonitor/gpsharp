@@ -1,4 +1,4 @@
-namespace GpSharp.GoPro.Status;
+namespace GpSharp.GoPro.Statuses;
 
 using System;
 using System.Threading.Tasks;
@@ -8,6 +8,5 @@ using System.Threading.Tasks;
 /// </summary>
 public interface IStatus
 {
-    object Value { get; }
-    Task<T?> GetValueAsync<T>();
+    Task<T> GetValueAsync<T>();
 }

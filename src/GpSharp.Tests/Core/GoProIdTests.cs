@@ -49,4 +49,13 @@ public class GoProIdTests
         // Assert
         value.Should().Be("9876");
     }
+
+    [Fact]
+    public void Equality_ShouldBeBasedOnPartialSerial()
+    {
+        var first = new GoProId("1234");
+        var second = new GoProId("1234");
+
+        first.Should().Be(second);
+    }
 }

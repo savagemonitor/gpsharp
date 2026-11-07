@@ -11,7 +11,7 @@ The SDK follows a layered architecture inspired by the OpenGoPro Kotlin Multipla
 - **Entry Point (`OgpSdk`):** Handles initialization, device discovery (malleable for HTTP/BLE), and connection management.
 - **Device Interface (`GoPro`):** The primary interface representing the camera hardware.
 - **Containerized Features:** Instead of a flat API, capabilities are grouped into specialized containers to maintain modularity:
-    - `Commands`: Action-oriented operations (e.g., `CapturePhotoAsync`).
+    - `Commands`: Action-oriented HTTP operations (e.g., `SetShutterAsync`).
     - `Settings`: Configuration management (e.g., `VideoResolution`).
     - `Statuses`: Real-time telemetry/state (e.g., `IsEncoding`).
     - `Features`: Advanced, protocol-specific capabilities (e.g., `Livestream`).

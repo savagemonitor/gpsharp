@@ -9,7 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.24.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
+    <PackageReference Include="System.Management" Version="10.0.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.0" />
     <PackageReference Include="Tmds.Mdns" Version="0.8.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="GpSharp.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\OpenGoPro\*.proto" ProtoRoot="Protos\OpenGoPro" GrpcServices="None" />
+    <None Include="Protos\OpenGoPro\NOTICE.md" Pack="true" PackagePath="licenses\OpenGoPro\NOTICE.md" />
   </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@ using GpSharp.Core;
 using GpSharp.GoPro.Commands;
 using GpSharp.GoPro.Features;
 using GpSharp.GoPro.Settings;
-using GpSharp.GoPro.Status;
+using GpSharp.GoPro.Statuses;
 using GpSharp.GoPro.Connectors;
 
 /// <summary>
@@ -51,8 +51,8 @@ public class GoPro
     {
         _connection = connection;
         Commands = new CommandsContainer(_connection);
-        Settings = new SettingsContainer(_connection);
-        Statuses = new StatusesContainer(_connection);
+        Settings = new SettingsContainer();
+        Statuses = new StatusesContainer();
         Features = new FeaturesContainer();
     }
 }

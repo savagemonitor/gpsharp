@@ -76,7 +76,7 @@ public class HttpConnectionTests
     {
         // Arrange
         var baseUrl = "http://192.168.1.100:8080/";
-        using var handler = new MockHttpMessageHandler(new HttpResponseMessage
+        using var handler = new MockHttpMessageHandler(() => new HttpResponseMessage
         {
             StatusCode = HttpStatusCode.InternalServerError,
             Content = new StringContent("Error")
@@ -89,16 +89,20 @@ public class HttpConnectionTests
 
         // Assert
         await act.Should().ThrowAsync<HttpRequestException>();
+        handler.SendCount.Should().Be(5);
     }
 }
 
 public class MockHttpMessageHandler : HttpMessageHandler
 {
-    private readonly HttpResponseMessage _response;
-    public MockHttpMessageHandler(HttpResponseMessage response) => _response = response;
+    private readonly Func<HttpResponseMessage> _responseFactory;
+    public int SendCount { get; private set; }
+    public MockHttpMessageHandler(HttpResponseMessage response) => _responseFactory = () => response;
+    public MockHttpMessageHandler(Func<HttpResponseMessage> responseFactory) => _responseFactory = responseFactory;
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        return Task.FromResult(_response);
+        SendCount++;
+        return Task.FromResult(_responseFactory());
     }
 }

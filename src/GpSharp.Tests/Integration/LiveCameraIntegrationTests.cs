@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using GpSharp.Core;
@@ -21,23 +20,19 @@ public class LiveCameraIntegrationTests
     public async Task DiscoverAndConnect_WithRealCamera_ShouldSucceed()
     {
         // Arrange
-        var discoveryService = new MdnsDiscovery();
+        using var discoveryService = new MdnsDiscovery();
         var sdk = new OgpSdk(discoveryService);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15)); // Limit search time
 
         // Act
-        IEnumerable<DiscoveredDevice> discoveredDevices = Enumerable.Empty<DiscoveredDevice>();
+        var discoveredDevices = new List<DiscoveredDevice>();
 
         try
         {
-            while (!cts.IsCancellationRequested)
+            await foreach (var discoveredDevice in sdk.DiscoverAsync(cts.Token))
             {
-                discoveredDevices = await sdk.DiscoverAsync(cts.Token);
-                if (discoveredDevices.Any())
-                {
-                    break;
-                }
-                await Task.Delay(2000, cts.Token); // Poll every 2 seconds
+                discoveredDevices.Add(discoveredDevice);
+                break;
             }
         }
         catch (OperationCanceledException)
@@ -45,12 +40,12 @@ public class LiveCameraIntegrationTests
              // Expected on timeout
         }
 
-        if (!discoveredDevices.Any())
+        if (discoveredDevices.Count == 0)
         {
             return;
         }
 
-        var device = discoveredDevices.First();
+        var device = discoveredDevices[0];
         var goPro = await sdk.ConnectAsync(device);
 
         // Assert
@@ -59,6 +54,6 @@ public class LiveCameraIntegrationTests
 
         // Attempt a basic command that is likely to work if connected (e.g., get media list)
         var mediaList = await goPro.Commands.GetMediaListAsync();
-        mediaList.Should().NotBeNull();
+        mediaList.IsSuccess.Should().BeTrue();
     }
 }

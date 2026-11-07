@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Threading;
 using GpSharp.Core;
+using GpSharp.Data;
 using GpSharp.GoPro.Settings;
 
 namespace GpSharp.GoPro.Statuses;
@@ -38,6 +39,14 @@ internal sealed class GenericStatus : IStatus
 
         try
         {
+            if (typeof(T) == typeof(bool) &&
+                OpenGoProProtocolCatalog.GetStatus(Id) is { ClrType: not null } metadata &&
+                metadata.TryGetTypedValue(value, out var typedValue) &&
+                typedValue is bool booleanValue)
+            {
+                return Result<T>.Success((T)(object)booleanValue);
+            }
+
             var parsed = value.Deserialize<T>();
             if (parsed is null)
             {

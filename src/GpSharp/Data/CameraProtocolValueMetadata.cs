@@ -109,6 +109,13 @@ public sealed class CameraProtocolValueMetadata
             return true;
         }
 
+        if (ClrType == typeof(bool) && rawValue.ValueKind == JsonValueKind.Number &&
+            rawValue.TryGetByte(out var booleanValue) && booleanValue <= 1)
+        {
+            value = booleanValue == 1;
+            return true;
+        }
+
         if (ClrType == typeof(byte) && rawValue.ValueKind == JsonValueKind.Number &&
             rawValue.TryGetByte(out var byteValue))
         {

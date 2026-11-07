@@ -42,16 +42,16 @@ public static class OpenGoProProtocolCatalog
         Statuses.TryGetValue(statusId, out var metadata) ? metadata : null;
 
     /// <summary>
-    /// Gets a display name for a setting, clearly identifying IDs without a published mapping.
+    /// Gets the canonical display name for a documented setting, or null when it has no published mapping.
     /// </summary>
-    public static string GetSettingDisplayName(int settingId) =>
-        GetSetting(settingId)?.Name ?? $"Uncatalogued setting (ID {settingId})";
+    public static string? GetSettingDisplayName(int settingId) =>
+        GetSetting(settingId)?.Name;
 
     /// <summary>
-    /// Gets a display name for a status, clearly identifying IDs without a published mapping.
+    /// Gets the canonical display name for a documented status, or null when it has no published mapping.
     /// </summary>
-    public static string GetStatusDisplayName(int statusId) =>
-        GetStatus(statusId)?.Name ?? $"Uncatalogued status (ID {statusId})";
+    public static string? GetStatusDisplayName(int statusId) =>
+        GetStatus(statusId)?.Name;
 
     private static Dictionary<int, CameraProtocolValueMetadata> CreateSettings()
     {

@@ -61,7 +61,10 @@ the complete ID-to-type-to-CLR mapping is maintained in [STATUS_TYPES.md](STATUS
 `CameraProtocolValueMetadata.TryGetTypedValue` yields the documented scalar CLR value or a
 `CameraProtocolOption` for known enum codes. `IStatus.GetValueAsync<T>()` can independently
 deserialize scalar, array, object, or `JsonElement` values from HTTP state; this does not reinterpret
-or discard the raw snapshot value.
+or discard the raw snapshot value. For documented Boolean statuses, typed bool reads normalize
+JSON `true`/`false` and numeric `1`/`0` to actual `bool` values. The `CameraState` snapshot retains
+the original JSON token/value. `GetSettingDisplayName` and `GetStatusDisplayName` return `null` for
+uncataloged IDs so clients can omit them from display without losing them from raw state.
 The docs include newer setting IDs 239, 256, 257, and 273 and status ID 123 that the Kotlin
 `UByte` identifier enums do not yet include. The sanitized snapshot's IDs absent from those
 sources remain explicitly uncatalogued: settings `6, 13, 41, 42, 47, 54, 62, 64, 84, 86, 103,

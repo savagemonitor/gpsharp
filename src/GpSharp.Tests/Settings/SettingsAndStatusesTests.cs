@@ -118,9 +118,10 @@ public class SettingsAndStatusesTests
         OpenGoProProtocolCatalog.GetSetting(257)!.Name.Should().Be("Subject Tracking");
         OpenGoProProtocolCatalog.GetSetting(273)!.Name.Should().Be("Output");
         OpenGoProProtocolCatalog.GetSetting(258).Should().BeNull();
-        OpenGoProProtocolCatalog.GetSettingDisplayName(258).Should().Be("Uncatalogued setting (ID 258)");
+        OpenGoProProtocolCatalog.GetSettingDisplayName(258).Should().BeNull();
         OpenGoProProtocolCatalog.GetStatus(70)!.ValueKind.Should().Be("Unsigned 8-bit integer");
         OpenGoProProtocolCatalog.GetStatus(91).Should().BeNull();
+        OpenGoProProtocolCatalog.GetStatusDisplayName(91).Should().BeNull();
     }
 
     [Fact]
@@ -229,7 +230,7 @@ public class SettingsAndStatusesTests
     }
 
     [Fact]
-    public async Task UnknownCameraStateIds_ShouldPreserveRawValuesAndUseExplicitFallbackNames()
+    public async Task UnknownCameraStateIds_ShouldPreserveRawValuesWithoutSyntheticDisplayNames()
     {
         var connection = new Mock<IHttpConnection>();
         connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
@@ -240,8 +241,49 @@ public class SettingsAndStatusesTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Settings[258].GetInt32().Should().Be(999);
         result.Value.Statuses[91].GetString().Should().Be("future-value");
-        OpenGoProProtocolCatalog.GetSettingDisplayName(258).Should().Be("Uncatalogued setting (ID 258)");
-        OpenGoProProtocolCatalog.GetStatusDisplayName(91).Should().Be("Uncatalogued status (ID 91)");
+        OpenGoProProtocolCatalog.GetSettingDisplayName(258).Should().BeNull();
+        OpenGoProProtocolCatalog.GetStatusDisplayName(91).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("1", true)]
+    [InlineData("0", false)]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public async Task BooleanStatusReads_ShouldNormalizeTransportValueAndPreserveRawState(
+        string rawJson,
+        bool expected)
+    {
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync($"{{\"status\":{{\"10\":{rawJson}}},\"settings\":{{}}}}");
+        var statuses = new StatusesContainer(connection.Object);
+
+        var typedStatus = await statuses.GetStatus(10).GetValueAsync<bool>();
+        var state = await statuses.GetCameraStateAsync();
+
+        typedStatus.IsSuccess.Should().BeTrue();
+        typedStatus.Value.Should().Be(expected);
+        state.IsSuccess.Should().BeTrue();
+        state.Value!.Statuses[10].GetRawText().Should().Be(rawJson);
+        JsonSerializer.Serialize(typedStatus.Value).Should().Be(expected ? "true" : "false");
+    }
+
+    [Fact]
+    public async Task BooleanStatusReads_ShouldNotConvertUndocumentedOrInvalidValues()
+    {
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"status\":{\"10\":2,\"91\":1},\"settings\":{}}");
+        var statuses = new StatusesContainer(connection.Object);
+
+        var invalidDocumentedBoolean = await statuses.GetStatus(10).GetValueAsync<bool>();
+        var undocumentedBoolean = await statuses.GetStatus(91).GetValueAsync<bool>();
+
+        invalidDocumentedBoolean.IsSuccess.Should().BeFalse();
+        invalidDocumentedBoolean.Error.Should().BeOfType<JsonException>();
+        undocumentedBoolean.IsSuccess.Should().BeFalse();
+        undocumentedBoolean.Error.Should().BeOfType<JsonException>();
     }
 
     [Fact]

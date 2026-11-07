@@ -127,7 +127,12 @@ expose its scalar CLR type or a `CameraProtocolOption` for known enum codes. The
 type table is in [STATUS_TYPES.md](STATUS_TYPES.md); its wire type mappings follow the pinned
 [Open GoPro BLE status parser](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/python/sdk_wireless_camera_control/open_gopro/api/ble_statuses.py).
 Array/object JSON values remain consumable through `GetValueAsync<T>()` or as raw `JsonElement`,
-even when no protocol type is documented.
+even when no protocol type is documented. For cataloged Boolean statuses, `GetValueAsync<bool>()`
+normalizes JSON booleans and numeric wire values `0`/`1` to `false`/`true`; the unmodified wire
+value remains in `CameraState.Statuses`. `GetSettingDisplayName(id)` and
+`GetStatusDisplayName(id)` return `null` for uncataloged IDs, so callers can omit those IDs from
+human-readable output instead of inventing labels. The raw snapshot still retains uncataloged IDs
+for forward compatibility.
 
 Against the sanitized MISSION 1 PRO identifier lists, the public catalog maps 33 of 96 setting
 IDs and 70 of 78 status IDs. The remaining identifiers are deliberately uncatalogued rather than

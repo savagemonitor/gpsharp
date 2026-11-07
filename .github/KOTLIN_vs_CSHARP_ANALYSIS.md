@@ -23,7 +23,8 @@ subset is therefore a protocol extension, not transport parity for those Kotlin 
 fields. Network and JSON errors are surfaced rather than hidden behind success-shaped defaults.
 Setting option writes accept non-negative integers/enums; named setting IDs are 2 (video resolution)
 and 3 (video frame rate), and named status IDs are 10 (encoding) and 70 (internal battery
-percentage). Generic IDs are byte-range, and the bulk snapshot preserves values as `JsonElement`.
+percentage). Generic IDs are non-negative integers, including protocol IDs above 255, and the bulk
+snapshot preserves values as `JsonElement`.
 Camera-rejected options can return supported-option metadata, but there is no proactive HTTP
 capability endpoint or update stream. Automated tests use mocks; physical setting writes are not
 performed.

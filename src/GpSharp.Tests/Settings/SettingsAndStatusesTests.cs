@@ -49,6 +49,51 @@ public class SettingsAndStatusesTests
     }
 
     [Fact]
+    public async Task StateRead_ShouldPreserveSettingAndStatusIdsAboveByteRange()
+    {
+        const string stateJson =
+            "{\"status\":{\"10\":1,\"270\":2},\"settings\":{\"256\":1,\"267\":2,\"275\":3}}";
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(stateJson);
+
+        var result = await new StatusesContainer(connection.Object).GetCameraStateAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Settings.Keys.Should().ContainInOrder(256, 267, 275);
+        result.Value.Settings[256].GetInt32().Should().Be(1);
+        result.Value.Settings[267].GetInt32().Should().Be(2);
+        result.Value.Settings[275].GetInt32().Should().Be(3);
+        result.Value.Statuses[270].GetInt32().Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetStatusAsync_ShouldLookUpStatusIdAboveByteRange()
+    {
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/state", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"status\":{\"270\":2},\"settings\":{\"256\":1}}");
+
+        var result = await new StatusesContainer(connection.Object).GetStatus(270).GetValueAsync<int>();
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetSettingAsync_ShouldAcceptProtocolIdAboveByteRange()
+    {
+        var connection = new Mock<IHttpConnection>();
+        connection.Setup(c => c.GetAsync("/gopro/camera/setting?setting=268", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("{\"option\":4}");
+
+        var result = await new SettingsContainer(connection.Object).GetSetting(268).GetValueAsync<int>();
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(4);
+    }
+
+    [Fact]
     public async Task SetSettingValueAsync_ShouldUseOpenGoProSettingAndOptionParameters()
     {
         var connection = new Mock<IHttpConnection>();
@@ -189,13 +234,13 @@ public class SettingsAndStatusesTests
     }
 
     [Fact]
-    public void Containers_ShouldRejectSettingOrStatusIdsOutsideProtocolByteRange()
+    public void Containers_ShouldRejectNegativeSettingOrStatusIds()
     {
         var connection = new Mock<IHttpConnection>().Object;
         var settings = new SettingsContainer(connection);
         var statuses = new StatusesContainer(connection);
 
-        Action setting = () => settings.GetSetting(256);
+        Action setting = () => settings.GetSetting(-1);
         Action status = () => statuses.GetStatus(-1);
 
         setting.Should().Throw<ArgumentOutOfRangeException>();

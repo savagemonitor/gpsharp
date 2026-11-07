@@ -9,7 +9,7 @@ public interface ISettingsContainer
     ISetting VideoFrameRate { get; }
 
     /// <summary>
-    /// Gets a setting by its Open GoPro protocol identifier, which must be in the range 0 through 255.
+    /// Gets a setting by its non-negative Open GoPro protocol identifier.
     /// </summary>
     ISetting GetSetting(int settingId);
 }

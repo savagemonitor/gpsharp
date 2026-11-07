@@ -23,8 +23,8 @@ public class SettingsContainer : ISettingsContainer
     public ISetting GetSetting(int settingId) =>
         new GenericSetting(ValidateId(settingId, nameof(settingId)), _connection);
 
-    internal static byte ValidateId(int id, string parameterName) =>
-        id is >= byte.MinValue and <= byte.MaxValue
-            ? (byte)id
-            : throw new ArgumentOutOfRangeException(parameterName, id, "Open GoPro setting and status IDs must be in the range 0-255.");
+    internal static int ValidateId(int id, string parameterName) =>
+        id >= 0
+            ? id
+            : throw new ArgumentOutOfRangeException(parameterName, id, "Open GoPro setting and status IDs must be non-negative.");
 }

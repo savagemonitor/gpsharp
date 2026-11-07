@@ -31,7 +31,7 @@ internal sealed class GenericStatus : IStatus
             return Result<T>.Failure(stateResult.Error!);
         }
 
-        if (!stateResult.Value!.Statuses.TryGetValue((byte)Id, out var value))
+        if (!stateResult.Value!.Statuses.TryGetValue(Id, out var value))
         {
             return Result<T>.Failure(new KeyNotFoundException($"Status ID {Id} was not returned by the camera."));
         }

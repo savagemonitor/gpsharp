@@ -30,7 +30,7 @@ properties are retained in each model's `AdditionalProperties`.
 
 ## Settings and status values
 
-Setting and status identifiers are protocol IDs in the range `0..255`. The named settings map to
+Setting and status identifiers are non-negative integer protocol IDs. The named settings map to
 video resolution ID `2` and video frame rate ID `3`; named statuses map to encoding ID `10` and
 internal battery percentage ID `70`. `GetSetting(int)` and `GetStatus(int)` expose other IDs.
 Setting reads deserialize the response's integer `option` into the caller's requested type;

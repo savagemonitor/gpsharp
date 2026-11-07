@@ -51,17 +51,17 @@ internal sealed class CameraStateClient
         }
     }
 
-    private static Dictionary<byte, JsonElement> ParseValues(JsonElement root, string propertyName)
+    private static Dictionary<int, JsonElement> ParseValues(JsonElement root, string propertyName)
     {
         if (!root.TryGetProperty(propertyName, out var values) || values.ValueKind != JsonValueKind.Object)
         {
             throw new JsonException($"The camera state response must contain a '{propertyName}' object.");
         }
 
-        var parsed = new Dictionary<byte, JsonElement>();
+        var parsed = new Dictionary<int, JsonElement>();
         foreach (var property in values.EnumerateObject())
         {
-            if (!byte.TryParse(property.Name, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
+            if (!int.TryParse(property.Name, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
             {
                 throw new JsonException($"The camera state contains an invalid {propertyName} ID '{property.Name}'.");
             }

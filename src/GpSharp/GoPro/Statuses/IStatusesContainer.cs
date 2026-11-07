@@ -14,7 +14,7 @@ public interface IStatusesContainer
     IStatus IsEncoding { get; }
 
     /// <summary>
-    /// Gets a status by its Open GoPro protocol identifier, which must be in the range 0 through 255.
+    /// Gets a status by its non-negative Open GoPro protocol identifier.
     /// </summary>
     IStatus GetStatus(int statusId);
 

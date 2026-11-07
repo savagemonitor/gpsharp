@@ -13,7 +13,7 @@ define a separate "Phase 1"; GpSharp uses the repository roadmap's HTTP-first ph
 - [x] HTTP connection to discovered camera addresses
 - [x] Shutter start/stop via `GET /gopro/camera/shutter/{start|stop}`
 - [x] Media-list retrieval via `GET /gopro/media/list`
-- [x] Setting reads/writes via `GET /gopro/camera/setting` (protocol IDs 0..255; integer option values)
+- [x] Setting reads/writes via `GET /gopro/camera/setting` (non-negative integer protocol IDs; integer option values)
 - [x] Status reads and bulk state snapshot via `GET /gopro/camera/state`
 - [x] Typed media-list models that retain unrecognized response fields
 - [x] Raw JSON state values keyed by setting/status protocol ID

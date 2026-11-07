@@ -12,17 +12,17 @@ public sealed class CameraState
     /// Gets the setting values keyed by their Open GoPro setting IDs.
     /// Values retain their original JSON types.
     /// </summary>
-    public IReadOnlyDictionary<byte, JsonElement> Settings { get; }
+    public IReadOnlyDictionary<int, JsonElement> Settings { get; }
 
     /// <summary>
     /// Gets the status values keyed by their Open GoPro status IDs.
     /// Values retain their original JSON types.
     /// </summary>
-    public IReadOnlyDictionary<byte, JsonElement> Statuses { get; }
+    public IReadOnlyDictionary<int, JsonElement> Statuses { get; }
 
     internal CameraState(
-        IReadOnlyDictionary<byte, JsonElement> settings,
-        IReadOnlyDictionary<byte, JsonElement> statuses)
+        IReadOnlyDictionary<int, JsonElement> settings,
+        IReadOnlyDictionary<int, JsonElement> statuses)
     {
         Settings = settings;
         Statuses = statuses;

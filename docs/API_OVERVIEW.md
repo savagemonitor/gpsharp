@@ -84,8 +84,8 @@ command transport. The schemas and their source attribution are in `src\GpSharp\
 ## Settings and statuses
 
 The settings container supports direct reads and writes through Open GoPro HTTP. The named
-`VideoResolution` and `VideoFrameRate` settings use protocol IDs 2 and 3. Other byte-range protocol
-IDs can be accessed with `camera.Settings.GetSetting(id)`. For example:
+`VideoResolution` and `VideoFrameRate` settings use protocol IDs 2 and 3. Other non-negative
+integer IDs can be accessed with `camera.Settings.GetSetting(id)`. For example:
 
 ```csharp
 var resolution = await camera.Settings.VideoResolution.GetValueAsync<int>();
@@ -106,7 +106,8 @@ includes it in the rejection response; GpSharp does not query capabilities proac
 `camera.Statuses.GetStatus(id).GetValueAsync<T>()` reads from a fresh camera-state response. Named
 statuses are `IsEncoding` (ID 10) and `InternalBatteryPercentage` (ID 70).
 `GetCameraStateAsync()` returns the full `CameraState` snapshot, with setting and status values
-preserved as `JsonElement` and keyed by protocol ID. Cancellation is propagated; missing IDs,
+preserved as `JsonElement` and keyed by non-negative integer protocol ID (including IDs above 255).
+Cancellation is propagated; missing IDs,
 invalid JSON, unsupported conversions, and HTTP failures are returned as failed results.
 
 These are request/response HTTP operations, not Kotlin WSDK BLE parity. BLE-backed settings/status

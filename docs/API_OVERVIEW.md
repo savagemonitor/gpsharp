@@ -4,6 +4,9 @@
 
 `OgpSdk.DiscoverAsync` streams devices announced by the Open GoPro mDNS service. Cancelling the
 enumeration stops the read; dispose the discovery service to stop its background mDNS browse.
+Each enumeration has an independent stream, starts by replaying the currently known endpoints, and
+then receives new or changed announcements. When mDNS reports a service removal, that endpoint is
+removed from the replay cache; a later announcement makes it discoverable again.
 
 ```csharp
 using System;
@@ -78,9 +81,69 @@ They cover camera name, last captured media, turbo transfer, COHN, and their sha
 They provide serialization only; the SDK does not yet implement the corresponding protobuf
 command transport. The schemas and their source attribution are in `src\GpSharp\Protos\OpenGoPro`.
 
-## Deferred containers
+## Settings and statuses
 
-`Settings` and `Statuses` remain present as API placeholders, but the Kotlin SDK routes their
-operations over BLE. Calls currently throw `NotSupportedException`; these operations are planned
-for the BLE phase. The features container and BLE connection state are likewise not implemented in
-Phase 1.
+The settings container supports direct reads and writes through Open GoPro HTTP. The named
+`VideoResolution` and `VideoFrameRate` settings use protocol IDs 2 and 3. Other non-negative
+integer IDs can be accessed with `camera.Settings.GetSetting(id)`. For example:
+
+```csharp
+var resolution = await camera.Settings.VideoResolution.GetValueAsync<int>();
+if (resolution.IsSuccess)
+{
+    Console.WriteLine($"Resolution option: {resolution.Value}");
+}
+
+// Setting writes change camera configuration; the camera validates the option.
+var update = await camera.Settings.VideoResolution.SetValueAsync(9);
+```
+
+Writes accept non-negative integer values or enums and return a failed `Result<Unit>` for
+validation, transport, or camera rejection. A rejected HTTP 403 can include
+`SettingRejectedException.SupportedOptions`. This metadata is available only when the camera
+includes it in the rejection response; GpSharp does not query capabilities proactively.
+
+`camera.Statuses.GetStatus(id).GetValueAsync<T>()` reads from a fresh camera-state response. Named
+statuses are `IsEncoding` (ID 10) and `InternalBatteryPercentage` (ID 70).
+`GetCameraStateAsync()` returns the full `CameraState` snapshot, with setting and status values
+preserved as `JsonElement` and keyed by non-negative integer protocol ID (including IDs above 255).
+Cancellation is propagated; missing IDs,
+invalid JSON, unsupported conversions, and HTTP failures are returned as failed results.
+
+`OpenGoProProtocolCatalog.GetSetting(id)` and `GetStatus(id)` provide the documented canonical
+name, description, value kind, source URLs, and static enum options where published. They return
+`null` for IDs absent from the catalog. For numeric enum values,
+`metadata.FindOption(rawJsonValue)` returns the canonical option name or `null` for an unmapped
+value; it does not alter the `JsonElement` stored in `CameraState`. Static enum options describe
+the published superset, not the capabilities of a particular camera or current mode, so camera
+validation remains authoritative. The catalog cites the current [Open GoPro setting
+documentation](https://gopro.github.io/OpenGoPro/docs/ble/settings) and [status
+documentation](https://gopro.github.io/OpenGoPro/docs/ble/statuses), with pinned Kotlin SDK source
+links for identifiers/options present in that SDK revision
+([settings](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Settings.kt),
+[statuses](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/kotlin/kmp_sdk/wsdk/src/commonMain/kotlin/com/gopro/open_gopro/entity/queries/Statuses.kt)).
+For a documented type, `metadata.ClrType` and `metadata.TryGetTypedValue(rawValue, out value)`
+expose its scalar CLR type or a `CameraProtocolOption` for known enum codes. The current source-backed
+type table is in [STATUS_TYPES.md](STATUS_TYPES.md); its wire type mappings follow the pinned
+[Open GoPro BLE status parser](https://github.com/gopro/OpenGoPro/blob/0f963572611c4410a15678531e9681a6ff874edb/demos/python/sdk_wireless_camera_control/open_gopro/api/ble_statuses.py).
+Array/object JSON values remain consumable through `GetValueAsync<T>()` or as raw `JsonElement`,
+even when no protocol type is documented. For cataloged Boolean statuses, `GetValueAsync<bool>()`
+normalizes JSON booleans and numeric wire values `0`/`1` to `false`/`true`; the unmodified wire
+value remains in `CameraState.Statuses`. `GetSettingDisplayName(id)` and
+`GetStatusDisplayName(id)` return `null` for uncataloged IDs, so callers can omit those IDs from
+human-readable output instead of inventing labels. The raw snapshot still retains uncataloged IDs
+for forward compatibility.
+
+Against the sanitized MISSION 1 PRO identifier lists, the public catalog maps 33 of 96 setting
+IDs and 70 of 78 status IDs. The remaining identifiers are deliberately uncatalogued rather than
+assigned guessed names: settings `6, 13, 41, 42, 47, 54, 62, 64, 84, 86, 103, 105, 111, 112,
+115, 116, 117, 118, 126, 129-132, 139, 145-147, 153, 154, 159, 198, 199, 203, 205, 206,
+208-214, 218, 221, 222, 226, 258-272, 274, 275`; statuses `3, 4, 14, 61, 90, 91, 109, 119`.
+These gaps mean only that those IDs were not found in the cited public catalog, not that the
+camera itself rejects or does not implement them. Current Open GoPro docs include settings
+239, 256, 257, and 273, and status 123, even though those IDs are not all present in the pinned
+Kotlin `UByte` ID enums.
+
+These are request/response HTTP operations, not Kotlin WSDK BLE parity. BLE-backed settings/status
+semantics, capability discovery and update streams remain later-phase work. `Features` and live
+connection state are also not implemented in Phase 1.

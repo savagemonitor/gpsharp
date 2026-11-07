@@ -13,23 +13,30 @@ define a separate "Phase 1"; GpSharp uses the repository roadmap's HTTP-first ph
 - [x] HTTP connection to discovered camera addresses
 - [x] Shutter start/stop via `GET /gopro/camera/shutter/{start|stop}`
 - [x] Media-list retrieval via `GET /gopro/media/list`
+- [x] Setting reads/writes via `GET /gopro/camera/setting` (non-negative integer protocol IDs; integer option values)
+- [x] Status reads and bulk state snapshot via `GET /gopro/camera/state`
 - [x] Typed media-list models that retain unrecognized response fields
+- [x] Raw JSON state values keyed by setting/status protocol ID
+- [x] Cancellation and `Result<T>` handling for settings/status requests
 - [x] Build and automated test verification
 - [ ] Validate discovery and commands against a physical camera
+- [ ] Validate setting/status reads against a physical camera (no physical writes performed)
 
 ### Phase 1 boundary
 
-The Kotlin SDK's settings, statuses, update streams, BLE command transport, pairing, and live
-connection state are BLE-backed. They are intentionally deferred; the GpSharp placeholders throw
-`NotSupportedException` rather than issue invented HTTP requests or return default values. The
-Phase 1 command API is limited to operations with an HTTP implementation in the Kotlin SDK; it does
-not invent separate photo/video methods.
+Setting and status calls use the documented Open GoPro HTTP endpoints; this extends the Kotlin
+WSDK's currently BLE-backed generic API and is not transport parity with Kotlin. GpSharp supports
+named setting IDs 2/3 and status IDs 10/70, generic ID access, request/response reads, integer
+option writes, and error metadata when a write response supplies supported options. It does not
+provide proactive HTTP capability discovery, update streams, BLE settings/status behavior, or live
+connection state. Those remain Phase 2 work. No physical-camera setting writes were used in
+validation.
 
 ## Phase 2: BLE and state
 
 - BLE discovery and connection management
 - BLE command operations
-- Typed settings and status queries, writes, capabilities, and update streams
+- Kotlin BLE-backed settings/status behavior, capabilities, and update streams
 - Live readiness, encoding, and disconnect state
 - Keep-alive and reconnect management
 

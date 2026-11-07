@@ -12,7 +12,7 @@
     <PackageReference Include="Google.Protobuf" Version="3.24.0" />
     <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
     <PackageReference Include="System.Management" Version="10.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.14" />
     <PackageReference Include="Tmds.Mdns" Version="0.8.0" />
   </ItemGroup>
   <ItemGroup>

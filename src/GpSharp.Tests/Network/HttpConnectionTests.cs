@@ -91,6 +91,45 @@ public class HttpConnectionTests
         await act.Should().ThrowAsync<HttpRequestException>();
         handler.SendCount.Should().Be(5);
     }
+
+    [Fact]
+    public async Task GetAsync_ShouldRetainForbiddenResponseBodyWithoutRetrying()
+    {
+        const string body = "{\"error\":3,\"supported_options\":[]}";
+        var baseUrl = "http://192.168.1.100:8080/";
+        using var handler = new MockHttpMessageHandler(() => new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.Forbidden,
+            Content = new StringContent(body)
+        });
+        var client = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
+        var connection = new HttpConnection(baseUrl, client);
+
+        Func<Task> act = async () => await connection.GetAsync("setting");
+
+        var error = await act.Should().ThrowAsync<HttpResponseException>();
+        error.Which.ResponseStatusCode.Should().Be(HttpStatusCode.Forbidden);
+        error.Which.ResponseBody.Should().Be(body);
+        handler.SendCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithCancellationToken_ShouldCancelPendingHttpRequest()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var baseUrl = "http://192.168.1.100:8080/";
+        using var handler = new CancellationHttpMessageHandler();
+        var client = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
+        var connection = new HttpConnection(baseUrl, client);
+
+        var request = connection.GetAsync("setting", cancellation.Token);
+        await handler.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+        Func<Task> act = async () => await request;
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        handler.CancellationObserved.Should().BeTrue();
+    }
 }
 
 public class MockHttpMessageHandler : HttpMessageHandler
@@ -104,5 +143,29 @@ public class MockHttpMessageHandler : HttpMessageHandler
     {
         SendCount++;
         return Task.FromResult(_responseFactory());
+    }
+}
+
+public class CancellationHttpMessageHandler : HttpMessageHandler
+{
+    public TaskCompletionSource RequestStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public bool CancellationObserved { get; private set; }
+
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        RequestStarted.TrySetResult();
+        try
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            throw new InvalidOperationException("The HTTP request was expected to be cancelled.");
+        }
+        catch (OperationCanceledException)
+        {
+            CancellationObserved = cancellationToken.IsCancellationRequested;
+            throw;
+        }
     }
 }
